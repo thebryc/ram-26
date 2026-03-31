@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PY27 RAM HQ — BRYC</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
   <style>
     :root {
       --green: #1B4332;
@@ -16,104 +17,167 @@
       --text: #1a1a1a;
       --muted: #6b7280;
       --border: #e2e8e4;
-      --sidebar: 230px;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
       background: var(--bg);
       color: var(--text);
-      display: flex;
-      min-height: 100vh;
     }
 
-    /* ── Sidebar ── */
-    .sidebar {
-      width: var(--sidebar);
+    /* ── Top Nav ── */
+    .topnav {
       background: var(--green);
-      position: fixed;
-      top: 0; left: 0; bottom: 0;
-      display: flex;
-      flex-direction: column;
-      z-index: 200;
-      overflow-y: auto;
-    }
-    .sidebar-header {
-      padding: 22px 18px 18px;
-      border-bottom: 1px solid rgba(255,255,255,0.12);
-    }
-    .logo-row {
       display: flex;
       align-items: center;
-      gap: 11px;
-      margin-bottom: 5px;
+      padding: 0 24px;
+      gap: 20px;
+      position: sticky;
+      top: 0;
+      z-index: 300;
+      height: 58px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.25);
+    }
+    .topnav-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+      margin-right: 6px;
     }
     .logo-mark {
-      width: 38px; height: 38px;
+      width: 36px; height: 36px;
       background: #000;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 9.5px;
+      font-size: 9px;
       font-weight: 900;
       color: #fff;
       letter-spacing: -0.5px;
       flex-shrink: 0;
     }
-    .logo-name { font-size: 16px; font-weight: 800; color: #fff; }
-    .logo-sub  { font-size: 11px; color: rgba(255,255,255,0.55); font-weight: 500; }
+    .brand-name { font-size: 15px; font-weight: 800; color: #fff; line-height: 1.2; }
+    .brand-sub  { font-size: 10px; color: rgba(255,255,255,0.5); }
 
-    .nav { flex: 1; padding: 10px 0; }
-    .nav-section {
-      font-size: 9.5px; font-weight: 800; text-transform: uppercase;
-      letter-spacing: 1.2px; color: rgba(255,255,255,0.35);
-      padding: 14px 18px 4px;
+    .topnav-divider {
+      width: 1px;
+      height: 28px;
+      background: rgba(255,255,255,0.15);
+      flex-shrink: 0;
     }
-    .nav-item {
-      display: flex; align-items: center; gap: 10px;
-      padding: 9px 18px;
-      color: rgba(255,255,255,0.75);
-      font-size: 13.5px; font-weight: 500;
+
+    .topnav-menu {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      flex: 1;
+    }
+
+    /* Dropdowns */
+    .nav-dropdown { position: relative; }
+    .nav-btn {
+      background: none;
+      border: none;
+      color: rgba(255,255,255,0.8);
+      font-size: 13.5px;
+      font-weight: 600;
+      padding: 8px 14px;
       cursor: pointer;
-      border-left: 3px solid transparent;
+      border-radius: 7px;
       transition: all 0.15s;
-      user-select: none;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-family: inherit;
     }
-    .nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
-    .nav-item.active {
-      background: rgba(255,255,255,0.13);
-      color: #fff;
-      border-left-color: var(--gold);
-    }
-    .nav-icon { font-size: 15px; width: 20px; text-align: center; }
-    .sidebar-footer {
-      padding: 12px 18px;
-      font-size: 11px;
-      color: rgba(255,255,255,0.3);
-      border-top: 1px solid rgba(255,255,255,0.1);
-    }
+    .nav-btn .caret { font-size: 9px; opacity: 0.7; transition: transform 0.15s; }
+    .nav-btn:hover { background: rgba(255,255,255,0.12); color: #fff; }
+    .nav-btn.active { background: rgba(255,255,255,0.18); color: #fff; }
+    .nav-dropdown:hover .nav-btn .caret,
+    .nav-dropdown:focus-within .nav-btn .caret { transform: rotate(180deg); }
 
-    /* ── Main ── */
-    .main { margin-left: var(--sidebar); flex: 1; display: flex; flex-direction: column; min-width: 0; }
-    .topbar {
+    .dropdown-panel {
+      display: none;
+      position: absolute;
+      top: calc(100% + 10px);
+      left: 0;
+      background: #fff;
+      border-radius: 11px;
+      border: 1px solid var(--border);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.14);
+      min-width: 210px;
+      overflow: hidden;
+      z-index: 500;
+    }
+    .nav-dropdown:hover .dropdown-panel,
+    .nav-dropdown:focus-within .dropdown-panel { display: block; }
+
+    .dropdown-label {
+      padding: 10px 16px 4px;
+      font-size: 9.5px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--muted);
+    }
+    .dropdown-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px;
+      font-size: 13.5px;
+      font-weight: 500;
+      color: var(--text);
+      cursor: pointer;
+      transition: background 0.12s;
+      border-left: 3px solid transparent;
+    }
+    .dropdown-item:last-child { margin-bottom: 6px; }
+    .dropdown-item:hover { background: #f4f7f5; color: var(--green); }
+    .dropdown-item.active {
+      color: var(--green);
+      font-weight: 700;
+      background: #f0fdf4;
+      border-left-color: var(--green);
+    }
+    .dropdown-icon { font-size: 15px; width: 18px; text-align: center; }
+
+    .topnav-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-shrink: 0;
+      margin-left: auto;
+    }
+    .live-dot { font-size: 10px; color: rgba(255,255,255,0.55); white-space: nowrap; }
+    .refresh-btn {
+      background: rgba(255,255,255,0.14);
+      color: #fff;
+      border: 1px solid rgba(255,255,255,0.22);
+      padding: 6px 13px;
+      border-radius: 7px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s;
+      font-family: inherit;
+    }
+    .refresh-btn:hover { background: rgba(255,255,255,0.24); }
+
+    /* ── Page Header ── */
+    .pagebar {
       background: #fff;
       border-bottom: 1px solid var(--border);
-      padding: 13px 28px;
-      display: flex; align-items: center; justify-content: space-between;
-      position: sticky; top: 0; z-index: 100;
+      padding: 14px 28px;
     }
-    .topbar-title { font-size: 16px; font-weight: 800; color: var(--green); }
-    .topbar-meta  { font-size: 11.5px; color: var(--muted); margin-top: 1px; }
-    .refresh-btn {
-      background: var(--green); color: #fff;
-      border: none; padding: 7px 15px;
-      border-radius: 7px; font-size: 12px; font-weight: 700;
-      cursor: pointer; transition: background 0.15s;
-    }
-    .refresh-btn:hover { background: var(--green-mid); }
+    .pagebar-title { font-size: 18px; font-weight: 800; color: var(--green); }
+    .pagebar-meta  { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
 
-    .content { padding: 26px 28px; flex: 1; }
+    /* ── Content ── */
+    .content { padding: 26px 28px; }
 
     /* ── Views ── */
     .view { display: none; }
@@ -127,10 +191,7 @@
       padding: 20px 22px;
       margin-bottom: 20px;
     }
-    .card-title {
-      font-size: 14px; font-weight: 800; color: var(--green);
-      margin-bottom: 4px;
-    }
+    .card-title { font-size: 14px; font-weight: 800; color: var(--green); margin-bottom: 4px; }
     .card-sub { font-size: 12px; color: var(--muted); margin-bottom: 16px; }
 
     /* ── Stats ── */
@@ -152,7 +213,40 @@
     }
     .stat-value { font-size: 32px; font-weight: 900; color: var(--green); line-height: 1; }
     .stat-value.gold { color: var(--gold); }
+    .stat-value.clickable { cursor: pointer; text-decoration: underline; text-decoration-style: dotted; }
+    .stat-value.clickable:hover { color: var(--gold); }
     .stat-sub { font-size: 11.5px; color: var(--muted); margin-top: 5px; }
+
+    /* ── Charts Row ── */
+    .charts-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 22px;
+    }
+    .chart-wrap {
+      position: relative;
+      height: 270px;
+    }
+    .chart-center {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      pointer-events: none;
+    }
+    .chart-center .big   { font-size: 26px; font-weight: 900; color: var(--green); line-height: 1; }
+    .chart-center .small { font-size: 10.5px; font-weight: 700; color: var(--muted); margin-top: 3px; }
+    .conversion-box {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 12px;
+      color: #92400e;
+      margin-top: 12px;
+      line-height: 1.5;
+    }
 
     /* ── Numbers Table ── */
     .numbers-wrap { overflow-x: auto; border-radius: 9px; border: 1px solid var(--border); }
@@ -166,13 +260,20 @@
     .numbers-table td { padding: 10px 14px; border-bottom: 1px solid var(--border); }
     .numbers-table tr:last-child td { border-bottom: none; font-weight: 800; background: #f8faf8; }
     .numbers-table tr:hover:not(:last-child) td { background: #f4f8f5; }
-
     .bar-cell { display: flex; align-items: center; gap: 8px; }
     .bar-track { flex: 1; min-width: 60px; background: #e4ede7; border-radius: 4px; height: 8px; overflow: hidden; }
     .bar-fill  { height: 100%; border-radius: 4px; background: var(--green); transition: width 0.5s ease; }
     .bar-fill.gold { background: var(--gold); }
     .bar-fill.done { background: #16a34a; }
     .bar-num { font-size: 11.5px; font-weight: 700; color: var(--text); white-space: nowrap; }
+    .num-link {
+      color: var(--green);
+      font-weight: 800;
+      cursor: pointer;
+      text-decoration: underline;
+      text-decoration-style: dotted;
+    }
+    .num-link:hover { color: var(--gold); }
 
     /* ── Generic Tables ── */
     .table-wrap { overflow-x: auto; border-radius: 9px; border: 1px solid var(--border); }
@@ -184,15 +285,88 @@
       text-align: left; border-bottom: 2px solid var(--border);
       white-space: nowrap;
     }
-    td { padding: 9px 13px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    td { padding: 9px 13px; border-bottom: 1px solid var(--border); vertical-align: middle; }
     tr:last-child td { border-bottom: none; }
     tr:hover td { background: #f8faf8; }
 
-    /* ── Badges ── */
-    .badge {
-      display: inline-block; padding: 2px 8px;
-      border-radius: 10px; font-size: 11px; font-weight: 700;
+    /* ── Edit Mode ── */
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
     }
+    .btn {
+      padding: 7px 14px;
+      border-radius: 7px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      transition: all 0.15s;
+      font-family: inherit;
+    }
+    .btn-primary { background: var(--green); color: #fff; }
+    .btn-primary:hover { background: var(--green-mid); }
+    .btn-outline { background: #fff; color: var(--green); border: 1px solid var(--green); }
+    .btn-outline:hover { background: var(--green); color: #fff; }
+    .btn-ghost { background: #fff; color: var(--muted); border: 1px solid var(--border); }
+    .btn-ghost:hover { border-color: var(--green); color: var(--green); }
+    .edit-notice {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-radius: 8px;
+      padding: 9px 14px;
+      font-size: 12px;
+      color: #92400e;
+      line-height: 1.5;
+    }
+    td input.inline-edit, td select.inline-edit {
+      width: 100%;
+      min-width: 80px;
+      border: 1px solid var(--green-light);
+      border-radius: 5px;
+      padding: 4px 7px;
+      font-size: 12px;
+      font-family: inherit;
+      background: #f0fdf4;
+      outline: none;
+    }
+    td input.inline-edit:focus, td select.inline-edit:focus {
+      border-color: var(--green);
+      background: #fff;
+      box-shadow: 0 0 0 2px rgba(27,67,50,0.1);
+    }
+    tr.row-changed td { background: #fffde7 !important; }
+
+    /* ── Expandable rows ── */
+    .expand-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 12px;
+      color: var(--muted);
+      padding: 2px 5px;
+      border-radius: 4px;
+      transition: transform 0.15s, background 0.1s;
+    }
+    .expand-btn:hover { background: #e4ede7; color: var(--green); }
+    .expand-btn.open { transform: rotate(90deg); }
+    .detail-row { display: none; }
+    .detail-row.open { display: table-row; }
+    .detail-row > td { background: #f8faf8 !important; padding: 16px 20px; border-bottom: 2px solid var(--border); }
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 14px;
+    }
+    .detail-field { }
+    .detail-label { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); margin-bottom: 4px; }
+    .detail-value { font-size: 13px; }
+
+    /* ── Badges ── */
+    .badge { display: inline-block; padding: 2px 9px; border-radius: 10px; font-size: 11px; font-weight: 700; }
     .b-hot  { background: #fef2f2; color: #dc2626; }
     .b-warm { background: #fffbeb; color: #d97706; }
     .b-cool { background: #eff6ff; color: #2563eb; }
@@ -201,13 +375,14 @@
     .b-no   { background: #fef2f2; color: #dc2626; }
 
     /* ── Filter bar ── */
-    .filter-bar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+    .filter-bar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; align-items: center; }
     .search-input, .filter-select {
       padding: 8px 12px;
       border: 1px solid var(--border);
       border-radius: 7px; font-size: 13px;
       outline: none; background: #fff; color: var(--text);
       transition: border-color 0.15s;
+      font-family: inherit;
     }
     .search-input { flex: 1; min-width: 200px; }
     .search-input:focus, .filter-select:focus { border-color: var(--green); }
@@ -215,16 +390,32 @@
 
     /* ── Weekly Notes ── */
     .week-block {
-      background: var(--card); border-radius: 11px;
-      border: 1px solid var(--border); margin-bottom: 16px; overflow: hidden;
+      background: var(--card);
+      border-radius: 11px;
+      border: 1px solid var(--border);
+      margin-bottom: 14px;
+      overflow: hidden;
     }
     .week-header {
-      background: var(--green); color: #fff;
-      padding: 11px 18px; font-size: 13px; font-weight: 700;
+      background: var(--green);
+      color: #fff;
+      padding: 11px 18px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      user-select: none;
     }
+    .week-header:hover { background: var(--green-mid); }
+    .week-caret { font-size: 10px; transition: transform 0.2s; }
+    .week-block.collapsed .week-caret { transform: rotate(-90deg); }
+    .week-block.collapsed .week-body { display: none; }
     .week-body { padding: 16px 18px; }
     .week-row {
-      padding-bottom: 14px; margin-bottom: 14px;
+      padding-bottom: 14px;
+      margin-bottom: 14px;
       border-bottom: 1px solid var(--border);
     }
     .week-row:last-child { padding-bottom: 0; margin-bottom: 0; border-bottom: none; }
@@ -269,10 +460,7 @@
     .link-chip:hover { background: #e2ede6; }
 
     /* ── Password Gate ── */
-    .gate-wrap {
-      display: flex; align-items: center; justify-content: center;
-      min-height: 340px;
-    }
+    .gate-wrap { display: flex; align-items: center; justify-content: center; min-height: 340px; }
     .gate-box {
       background: var(--card); border-radius: 14px;
       border: 1px solid var(--border); padding: 38px 40px;
@@ -285,14 +473,15 @@
       width: 100%; padding: 10px 14px;
       border: 1px solid var(--border); border-radius: 8px;
       font-size: 15px; text-align: center; letter-spacing: 3px;
-      outline: none; margin-bottom: 10px;
+      outline: none; margin-bottom: 10px; font-family: inherit;
     }
     .pw-input:focus { border-color: var(--green); }
     .pw-error { color: #dc2626; font-size: 12px; margin-bottom: 10px; display: none; }
     .btn-unlock {
       width: 100%; background: var(--green); color: #fff;
       border: none; padding: 11px; border-radius: 8px;
-      font-size: 14px; font-weight: 700; cursor: pointer; transition: background 0.15s;
+      font-size: 14px; font-weight: 700; cursor: pointer;
+      transition: background 0.15s; font-family: inherit;
     }
     .btn-unlock:hover { background: var(--green-mid); }
 
@@ -310,307 +499,352 @@
     .sub-tab:hover { color: var(--green); }
     .sub-tab.active { color: var(--green); border-bottom-color: var(--green); }
 
-    /* ── Info / Error msgs ── */
-    .msg-info {
-      background: #f0fdf4; border: 1px solid #bbf7d0;
-      border-radius: 8px; padding: 12px 16px;
-      color: #15803d; font-size: 13px; margin-bottom: 16px; line-height: 1.5;
-    }
-    .msg-warn {
-      background: #fffbeb; border: 1px solid #fde68a;
-      border-radius: 8px; padding: 12px 16px;
-      color: #92400e; font-size: 13px; margin-bottom: 16px; line-height: 1.5;
-    }
-    .msg-err {
-      background: #fef2f2; border: 1px solid #fecaca;
-      border-radius: 8px; padding: 12px 16px;
-      color: #991b1b; font-size: 13px; margin-bottom: 16px; line-height: 1.5;
-    }
+    /* ── Messages ── */
+    .msg-info { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px 16px; color: #15803d; font-size: 13px; margin-bottom: 16px; line-height: 1.5; }
+    .msg-warn { background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 12px 16px; color: #92400e; font-size: 13px; margin-bottom: 16px; line-height: 1.5; }
+    .msg-err  { background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 12px 16px; color: #991b1b; font-size: 13px; margin-bottom: 16px; line-height: 1.5; }
 
     /* ── Loading ── */
-    .loading {
-      display: flex; align-items: center; justify-content: center;
-      padding: 40px; color: var(--muted); font-size: 13px; gap: 9px;
-    }
-    .spinner {
-      width: 16px; height: 16px;
-      border: 2px solid var(--border);
-      border-top-color: var(--green);
-      border-radius: 50%;
-      animation: spin 0.7s linear infinite;
-    }
+    .loading { display: flex; align-items: center; justify-content: center; padding: 40px; color: var(--muted); font-size: 13px; gap: 9px; }
+    .spinner { width: 16px; height: 16px; border: 2px solid var(--border); border-top-color: var(--green); border-radius: 50%; animation: spin 0.7s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
     /* ── Responsive ── */
     @media (max-width: 960px) {
       .stats-grid { grid-template-columns: repeat(2,1fr); }
+      .charts-row { grid-template-columns: 1fr; }
       .updates-cols { grid-template-columns: 1fr; }
     }
     @media (max-width: 640px) {
       .stats-grid { grid-template-columns: 1fr 1fr; }
       .content { padding: 16px; }
+      .topnav { padding: 0 14px; gap: 10px; }
+      .topnav-brand .brand-sub { display: none; }
     }
   </style>
 </head>
 <body>
 
-<!-- Local-file warning — hidden by default, shown via JS if needed -->
+<!-- Local-file warning -->
 <div id="local-warning" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9999;background:#92400e;color:#fff;font-size:13px;font-weight:600;padding:11px 20px;text-align:center;line-height:1.5">
   ⚠️ <strong>Live data won't load from a local file.</strong>
-  Deploy this file to GitHub Pages (or any web server) to enable live Google Sheets sync.
-  <span style="opacity:.7;font-weight:400;margin-left:8px">You can still review the layout — data will appear once hosted.</span>
+  Deploy to GitHub Pages (or any web server) to enable live Google Sheets sync.
+  <span style="opacity:.7;font-weight:400;margin-left:8px">Layout is visible — data appears once hosted.</span>
 </div>
 
 <!-- ════════════════════════════════════════════
-     SIDEBAR
+     TOP NAVIGATION
 ════════════════════════════════════════════ -->
-<nav class="sidebar">
-  <div class="sidebar-header">
-    <div class="logo-row">
-      <div class="logo-mark">BRYC</div>
-      <div>
-        <div class="logo-name">RAM HQ</div>
+<nav class="topnav">
+  <div class="topnav-brand">
+    <div class="logo-mark">BRYC</div>
+    <div>
+      <div class="brand-name">RAM HQ</div>
+      <div class="brand-sub">Program Year 2027</div>
+    </div>
+  </div>
+
+  <div class="topnav-divider"></div>
+
+  <div class="topnav-menu">
+
+    <!-- Overview -->
+    <div class="nav-dropdown">
+      <button class="nav-btn active" id="grp-overview">Overview <span class="caret">▼</span></button>
+      <div class="dropdown-panel">
+        <div class="dropdown-label">Overview</div>
+        <div class="dropdown-item active" data-view="dashboard" onclick="nav(this,'dashboard')">
+          <span class="dropdown-icon">📊</span> Dashboard
+        </div>
+        <div class="dropdown-item" data-view="notes" onclick="nav(this,'notes')">
+          <span class="dropdown-icon">📝</span> Weekly Notes
+        </div>
       </div>
     </div>
-    <div class="logo-sub">Program Year 2027</div>
+
+    <!-- Recruitment -->
+    <div class="nav-dropdown">
+      <button class="nav-btn" id="grp-recruitment">Recruitment <span class="caret">▼</span></button>
+      <div class="dropdown-panel">
+        <div class="dropdown-label">Recruitment</div>
+        <div class="dropdown-item" data-view="schools" onclick="nav(this,'schools')">
+          <span class="dropdown-icon">🏫</span> School Tracker
+        </div>
+      </div>
+    </div>
+
+    <!-- Resources -->
+    <div class="nav-dropdown">
+      <button class="nav-btn" id="grp-resources">Resources <span class="caret">▼</span></button>
+      <div class="dropdown-panel">
+        <div class="dropdown-label">Resources</div>
+        <div class="dropdown-item" data-view="resources" onclick="nav(this,'resources')">
+          <span class="dropdown-icon">🔗</span> Links &amp; Resources
+        </div>
+        <div class="dropdown-item" data-view="promo" onclick="nav(this,'promo')">
+          <span class="dropdown-icon">🎁</span> Promo Items
+        </div>
+      </div>
+    </div>
+
+    <!-- Restricted -->
+    <div class="nav-dropdown">
+      <button class="nav-btn" id="grp-restricted">🔒 Restricted <span class="caret">▼</span></button>
+      <div class="dropdown-panel">
+        <div class="dropdown-label">Restricted</div>
+        <div class="dropdown-item" data-view="sensitive" onclick="nav(this,'sensitive')">
+          <span class="dropdown-icon">👥</span> Student Data
+        </div>
+      </div>
+    </div>
+
   </div>
 
-  <div class="nav">
-    <div class="nav-section">Overview</div>
-    <div class="nav-item active" data-view="dashboard" onclick="nav(this,'dashboard')">
-      <span class="nav-icon">📊</span> Dashboard
-    </div>
-    <div class="nav-item" data-view="notes" onclick="nav(this,'notes')">
-      <span class="nav-icon">📝</span> Weekly Notes
-    </div>
-
-    <div class="nav-section">Recruitment</div>
-    <div class="nav-item" data-view="schools" onclick="nav(this,'schools')">
-      <span class="nav-icon">🏫</span> School Tracker
-    </div>
-
-    <div class="nav-section">Resources</div>
-    <div class="nav-item" data-view="resources" onclick="nav(this,'resources')">
-      <span class="nav-icon">🔗</span> Links & Resources
-    </div>
-    <div class="nav-item" data-view="promo" onclick="nav(this,'promo')">
-      <span class="nav-icon">🎁</span> Promo Items
-    </div>
-
-    <div class="nav-section">Restricted</div>
-    <div class="nav-item" data-view="sensitive" onclick="nav(this,'sensitive')">
-      <span class="nav-icon">🔒</span> Student Data
-    </div>
-  </div>
-
-  <div class="sidebar-footer">🟢 Live · Google Sheets</div>
-</nav>
-
-<!-- ════════════════════════════════════════════
-     MAIN
-════════════════════════════════════════════ -->
-<div class="main">
-  <div class="topbar">
-    <div>
-      <div class="topbar-title" id="page-title">Dashboard</div>
-      <div class="topbar-meta" id="page-meta">Loading live data…</div>
-    </div>
+  <div class="topnav-right">
+    <span class="live-dot">🟢 Live · Google Sheets</span>
     <button class="refresh-btn" onclick="refresh()">⟳ Refresh</button>
   </div>
+</nav>
 
-  <div class="content">
+<!-- Page title bar -->
+<div class="pagebar">
+  <div class="pagebar-title" id="page-title">Dashboard</div>
+  <div class="pagebar-meta" id="page-meta">Loading live data…</div>
+</div>
 
-    <!-- ── DASHBOARD ── -->
-    <div class="view active" id="view-dashboard">
-      <div class="stats-grid" id="stats-grid">
-        <div class="loading" style="grid-column:1/-1"><div class="spinner"></div> Loading…</div>
-      </div>
+<div class="content">
+
+  <!-- ── DASHBOARD ── -->
+  <div class="view active" id="view-dashboard">
+
+    <div class="stats-grid" id="stats-grid">
+      <div class="loading" style="grid-column:1/-1"><div class="spinner"></div> Loading…</div>
+    </div>
+
+    <!-- Donut charts (hidden until data loads) -->
+    <div class="charts-row" id="charts-row" style="display:none">
       <div class="card">
-        <div class="card-title">Enrollment by Grade</div>
-        <div class="card-sub">Applications vs. recruiting need · Live from Numbers tab</div>
-        <div id="numbers-table-wrap">
-          <div class="loading"><div class="spinner"></div> Loading numbers…</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ── WEEKLY NOTES ── -->
-    <div class="view" id="view-notes">
-      <div id="notes-wrap">
-        <div class="loading"><div class="spinner"></div> Loading notes…</div>
-      </div>
-    </div>
-
-    <!-- ── SCHOOL TRACKER ── -->
-    <div class="view" id="view-schools">
-      <div class="filter-bar">
-        <input class="search-input" id="school-q" placeholder="Search schools…" oninput="filterSchools()">
-        <select class="filter-select" id="school-parish" onchange="filterSchools()">
-          <option value="">All Parishes</option>
-        </select>
-        <select class="filter-select" id="school-temp" onchange="filterSchools()">
-          <option value="">All Relationships</option>
-          <option value="Hot">🔥 Hot</option>
-          <option value="Warm">🌤 Warm</option>
-          <option value="Cool">🌊 Cool</option>
-          <option value="Cold">🧊 Cold</option>
-        </select>
-        <select class="filter-select" id="school-visited" onchange="filterSchools()">
-          <option value="">All</option>
-          <option value="yes">✅ Visited</option>
-          <option value="no">⬜ Not Visited</option>
-        </select>
-        <select class="filter-select" id="school-rep" onchange="filterSchools()">
-          <option value="">All Reps</option>
-          <option value="Forrest">Forrest</option>
-          <option value="Keiron">Keiron</option>
-          <option value="Marcus">Marcus</option>
-        </select>
-      </div>
-      <div class="result-count" id="school-count"></div>
-      <div id="schools-wrap">
-        <div class="loading"><div class="spinner"></div> Loading schools…</div>
-      </div>
-    </div>
-
-    <!-- ── RESOURCES ── -->
-    <div class="view" id="view-resources">
-      <div class="card">
-        <div class="card-title">RAM Infrastructure Links</div>
-        <div class="card-sub">Key materials, decks, and tools</div>
-        <div id="infra-wrap">
-          <div class="loading"><div class="spinner"></div> Loading…</div>
+        <div class="card-title">Applications Progress by Grade</div>
+        <div class="card-sub">Apps submitted vs. recruiting need — click a segment or number to filter</div>
+        <div class="chart-wrap">
+          <canvas id="apps-chart"></canvas>
+          <div class="chart-center">
+            <div class="big" id="apps-pct-lbl">—</div>
+            <div class="small">overall</div>
+          </div>
         </div>
       </div>
       <div class="card">
-        <div class="card-title">Quick Navigation</div>
-        <div class="card-sub">Jump to any section of RAM HQ</div>
-        <div id="quicklinks-wrap">
-          <div class="loading"><div class="spinner"></div> Loading…</div>
+        <div class="card-title">Prospect Pipeline by Grade</div>
+        <div class="card-sub">Every 3 prospects → ~1 expected application — click to filter</div>
+        <div class="chart-wrap">
+          <canvas id="prospects-chart"></canvas>
+          <div class="chart-center">
+            <div class="big" id="prospects-total-lbl">—</div>
+            <div class="small">total prospects</div>
+          </div>
         </div>
+        <div class="conversion-box" id="conversion-box"></div>
       </div>
     </div>
 
-    <!-- ── PROMO ITEMS ── -->
-    <div class="view" id="view-promo">
-      <div id="promo-wrap">
-        <div class="loading"><div class="spinner"></div> Loading promo items…</div>
+    <div class="card">
+      <div class="card-title">Enrollment by Grade</div>
+      <div class="card-sub">Applications vs. recruiting need · Live from Numbers tab · <strong>Click any number</strong> to jump to filtered records</div>
+      <div id="numbers-table-wrap">
+        <div class="loading"><div class="spinner"></div> Loading numbers…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── WEEKLY NOTES ── -->
+  <div class="view" id="view-notes">
+    <div id="notes-wrap">
+      <div class="loading"><div class="spinner"></div> Loading notes…</div>
+    </div>
+  </div>
+
+  <!-- ── SCHOOL TRACKER ── -->
+  <div class="view" id="view-schools">
+    <div class="filter-bar">
+      <input class="search-input" id="school-q" placeholder="Search schools…" oninput="filterSchools()">
+      <select class="filter-select" id="school-parish" onchange="filterSchools()">
+        <option value="">All Parishes</option>
+      </select>
+      <select class="filter-select" id="school-temp" onchange="filterSchools()">
+        <option value="">All Relationships</option>
+        <option value="Hot">🔥 Hot</option>
+        <option value="Warm">🌤 Warm</option>
+        <option value="Cool">🌊 Cool</option>
+        <option value="Cold">🧊 Cold</option>
+      </select>
+      <select class="filter-select" id="school-visited" onchange="filterSchools()">
+        <option value="">All</option>
+        <option value="yes">✅ Visited</option>
+        <option value="no">⬜ Not Visited</option>
+      </select>
+      <select class="filter-select" id="school-rep" onchange="filterSchools()">
+        <option value="">All Reps</option>
+        <option value="Forrest">Forrest</option>
+        <option value="Keiron">Keiron</option>
+        <option value="Marcus">Marcus</option>
+      </select>
+      <button class="btn btn-primary" id="school-edit-btn" onclick="toggleSchoolEdit()">✏️ Edit Mode</button>
+    </div>
+    <div id="school-edit-notice" style="display:none" class="edit-notice" style="margin-bottom:14px">
+      ✏️ <strong>Edit Mode ON</strong> — Changes are tracked in your browser session.
+      <strong>To sync to Google Sheets:</strong> export as CSV and paste back into your sheet, or ask your team to set up a Google Apps Script web app for two-way sync.
+    </div>
+    <div class="result-count" id="school-count"></div>
+    <div id="schools-wrap">
+      <div class="loading"><div class="spinner"></div> Loading schools…</div>
+    </div>
+  </div>
+
+  <!-- ── RESOURCES ── -->
+  <div class="view" id="view-resources">
+    <div class="card">
+      <div class="card-title">RAM Infrastructure Links</div>
+      <div class="card-sub">Key materials, decks, and tools</div>
+      <div id="infra-wrap">
+        <div class="loading"><div class="spinner"></div> Loading…</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Quick Navigation</div>
+      <div class="card-sub">Jump to any section of RAM HQ</div>
+      <div id="quicklinks-wrap">
+        <div class="loading"><div class="spinner"></div> Loading…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PROMO ITEMS ── -->
+  <div class="view" id="view-promo">
+    <div class="toolbar" style="margin-bottom:14px">
+      <button class="btn btn-primary" id="promo-edit-btn" onclick="togglePromoEdit()">✏️ Edit Mode</button>
+      <button class="btn btn-outline" id="promo-export-btn" style="display:none" onclick="exportPromo()">⬇ Export CSV</button>
+      <span id="promo-edit-label" style="display:none;font-size:12px;color:#92400e">✏️ <strong>Edit Mode ON</strong> — edit quantities &amp; stock status below. Export CSV to sync back to Google Sheets.</span>
+    </div>
+    <div id="promo-wrap">
+      <div class="loading"><div class="spinner"></div> Loading promo items…</div>
+    </div>
+  </div>
+
+  <!-- ── STUDENT DATA (PROTECTED) ── -->
+  <div class="view" id="view-sensitive">
+    <div id="gate-wrap" class="gate-wrap">
+      <div class="gate-box">
+        <div class="gate-icon">🔒</div>
+        <div class="gate-title">Restricted Access</div>
+        <div class="gate-desc">
+          This section contains student records including Prospects, Applications, Referrals, and ISACT contacts.
+          Enter the RAM team password to continue.
+        </div>
+        <input type="password" class="pw-input" id="pw-input" placeholder="Password" onkeydown="if(event.key==='Enter')unlock()">
+        <div class="pw-error" id="pw-err">Incorrect password. Try again.</div>
+        <button class="btn-unlock" onclick="unlock()">Unlock</button>
       </div>
     </div>
 
-    <!-- ── STUDENT DATA (PROTECTED) ── -->
-    <div class="view" id="view-sensitive">
-      <div id="gate-wrap" class="gate-wrap">
-        <div class="gate-box">
-          <div class="gate-icon">🔒</div>
-          <div class="gate-title">Restricted Access</div>
-          <div class="gate-desc">
-            This section contains student records including Prospects, Applications, Referrals, and ISACT contacts.
-            Enter the RAM team password to continue.
-          </div>
-          <input type="password" class="pw-input" id="pw-input" placeholder="Password" onkeydown="if(event.key==='Enter')unlock()">
-          <div class="pw-error" id="pw-err">Incorrect password. Try again.</div>
-          <button class="btn-unlock" onclick="unlock()">Unlock</button>
-        </div>
+    <div id="sensitive-body" style="display:none">
+      <div class="sub-tabs">
+        <div class="sub-tab active" onclick="subTab(this,'prospects')">Prospects</div>
+        <div class="sub-tab" onclick="subTab(this,'applications')">Applications</div>
+        <div class="sub-tab" onclick="subTab(this,'referrals')">Referrals</div>
+        <div class="sub-tab" onclick="subTab(this,'isact')">ISACT Juniors</div>
       </div>
 
-      <div id="sensitive-body" style="display:none">
-        <div class="sub-tabs">
-          <div class="sub-tab active" onclick="subTab(this,'prospects')">Prospects</div>
-          <div class="sub-tab" onclick="subTab(this,'applications')">Applications</div>
-          <div class="sub-tab" onclick="subTab(this,'referrals')">Referrals</div>
-          <div class="sub-tab" onclick="subTab(this,'isact')">ISACT Juniors</div>
+      <!-- Prospects -->
+      <div id="sub-prospects">
+        <div class="filter-bar">
+          <input class="search-input" id="pr-q" placeholder="Search by name, school, grade…" oninput="filterProspects()">
+          <select class="filter-select" id="pr-grade" onchange="filterProspects()">
+            <option value="">All Grades</option>
+          </select>
         </div>
+        <div class="result-count" id="pr-count"></div>
+        <div id="prospects-wrap"><div class="loading"><div class="spinner"></div> Loading prospects…</div></div>
+      </div>
 
-        <!-- Prospects -->
-        <div id="sub-prospects">
-          <div class="filter-bar">
-            <input class="search-input" id="pr-q" placeholder="Search by name, school, grade…" oninput="filterProspects()">
-            <select class="filter-select" id="pr-grade" onchange="filterProspects()">
-              <option value="">All Grades</option>
-            </select>
-          </div>
-          <div class="result-count" id="pr-count"></div>
-          <div id="prospects-wrap">
-            <div class="loading"><div class="spinner"></div> Loading prospects…</div>
-          </div>
+      <!-- Applications -->
+      <div id="sub-applications" style="display:none">
+        <div class="filter-bar">
+          <input class="search-input" id="ap-q" placeholder="Search by name, school, grade…" oninput="filterApps()">
+          <select class="filter-select" id="ap-grade" onchange="filterApps()">
+            <option value="">All Grades</option>
+          </select>
         </div>
+        <div class="result-count" id="ap-count"></div>
+        <div id="apps-wrap"><div class="loading"><div class="spinner"></div> Loading applications…</div></div>
+      </div>
 
-        <!-- Applications -->
-        <div id="sub-applications" style="display:none">
-          <div class="filter-bar">
-            <input class="search-input" id="ap-q" placeholder="Search by name, school, grade…" oninput="filterApps()">
-            <select class="filter-select" id="ap-grade" onchange="filterApps()">
-              <option value="">All Grades</option>
-            </select>
-          </div>
-          <div class="result-count" id="ap-count"></div>
-          <div id="apps-wrap">
-            <div class="loading"><div class="spinner"></div> Loading applications…</div>
-          </div>
-        </div>
+      <!-- Referrals -->
+      <div id="sub-referrals" style="display:none">
+        <div id="ref-wrap"><div class="loading"><div class="spinner"></div> Loading referrals…</div></div>
+      </div>
 
-        <!-- Referrals -->
-        <div id="sub-referrals" style="display:none">
-          <div id="ref-wrap">
-            <div class="loading"><div class="spinner"></div> Loading referrals…</div>
-          </div>
+      <!-- ISACT -->
+      <div id="sub-isact" style="display:none">
+        <div class="msg-info">
+          <strong>ISACT Junior Prospect Cards</strong> — Students from In-School ACT visits who can bypass the BRYC application and complete onboarding directly as existing BRYC Fellows.
         </div>
-
-        <!-- ISACT -->
-        <div id="sub-isact" style="display:none">
-          <div class="msg-info">
-            <strong>ISACT Junior Prospect Cards</strong> — Students from In-School ACT visits who can bypass the BRYC application and complete onboarding directly as existing BRYC Fellows.
-          </div>
-          <div id="isact-wrap">
-            <div class="loading"><div class="spinner"></div> Loading ISACT data…</div>
-          </div>
-        </div>
+        <div id="isact-wrap"><div class="loading"><div class="spinner"></div> Loading ISACT data…</div></div>
       </div>
     </div>
+  </div>
 
-  </div><!-- /content -->
-</div><!-- /main -->
+</div><!-- /content -->
 
 <script>
 // ═══════════════════════════════════════════════════════════════
 //  CONFIG
 // ═══════════════════════════════════════════════════════════════
-const SHEET_ID = '1Zm8s2C25SzXAxOWqy-CEDUFH6eZ9KIui3eWP313nITs';
-const PASSWORD = 'RAM2027';        // ← change this to your real team password
+const SHEET_ID   = '1Zm8s2C25SzXAxOWqy-CEDUFH6eZ9KIui3eWP313nITs';
+const PASSWORD   = 'RAM2027';
 const SESSION_KEY = 'ram_hq_auth';
 
-let _schools = [], _prospects = [], _apps = [];
-let _currentView = 'dashboard';
+let _schools       = [];
+let _schoolEdits   = {};
+let _schoolEditMode = false;
+let _promoData     = [];
+let _promoEditMode = false;
+let _prospects     = [];
+let _apps          = [];
+let _currentView   = 'dashboard';
+let _appsChart     = null;
+let _prospectsChart = null;
+let _pendingNav    = null;   // { tab, grade } to apply after sensitive unlocks
 
 const VIEW_TITLES = {
-  dashboard: 'Dashboard',
-  notes: 'Weekly RAM / Program Support Notes',
-  schools: 'School Tracker',
-  resources: 'Links & Resources',
-  promo: 'Promo Items',
-  sensitive: 'Student Data — Restricted'
+  dashboard : 'Dashboard',
+  notes     : 'Weekly RAM / Program Support Notes',
+  schools   : 'School Tracker',
+  resources : 'Links & Resources',
+  promo     : 'Promo Items',
+  sensitive : 'Student Data — Restricted'
+};
+
+const VIEW_GROUP = {
+  dashboard: 'overview', notes: 'overview',
+  schools: 'recruitment',
+  resources: 'resources', promo: 'resources',
+  sensitive: 'restricted'
 };
 
 // ═══════════════════════════════════════════════════════════════
 //  SHEET FETCHING
 // ═══════════════════════════════════════════════════════════════
 function sheetUrl(name) {
-  // Uses the Publish-to-web CSV endpoint — works from any https:// host
   return `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(name)}&t=${Date.now()}`;
 }
 
 async function fetchSheet(name) {
-  const r = await fetch(sheetUrl(name), {
-    method: 'GET',
-    credentials: 'omit',
-    cache: 'no-store'
-  });
+  const r = await fetch(sheetUrl(name), { method:'GET', credentials:'omit', cache:'no-store' });
   if (!r.ok) throw new Error(`HTTP ${r.status} — sheet may not be shared publicly`);
   const text = await r.text();
-  if (text.includes('<html') || text.includes('<!DOCTYPE')) {
+  if (text.includes('<html') || text.includes('<!DOCTYPE'))
     throw new Error('Google returned a login page. Make sure the sheet is set to "Anyone with the link can view."');
-  }
   return parseCSV(text);
 }
 
@@ -645,8 +879,11 @@ function parseCSV(txt) {
 //  NAVIGATION
 // ═══════════════════════════════════════════════════════════════
 function nav(el, viewName) {
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('.dropdown-item').forEach(n => n.classList.remove('active'));
   el.classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  const grp = VIEW_GROUP[viewName];
+  if (grp) document.getElementById('grp-' + grp)?.classList.add('active');
   showView(viewName);
 }
 
@@ -669,6 +906,32 @@ function loadView(name, force = false) {
   else if (name === 'sensitive' && sessionStorage.getItem(SESSION_KEY) === '1') openSensitive(force);
 }
 
+// Navigate to Student Data with an optional tab + grade filter
+function navToSensitive(tab, grade) {
+  _pendingNav = { tab, grade };
+  const el = document.querySelector('.dropdown-item[data-view="sensitive"]');
+  if (el) nav(el, 'sensitive');
+}
+
+function applyPendingNav() {
+  if (!_pendingNav) return;
+  const { tab, grade } = _pendingNav;
+  _pendingNav = null;
+  setTimeout(() => {
+    if (tab === 'applications') {
+      document.querySelectorAll('.sub-tab')[1]?.click();
+      setTimeout(() => {
+        if (grade) { const s = document.getElementById('ap-grade'); if (s) { s.value = grade; filterApps(); } }
+      }, 400);
+    } else if (tab === 'prospects') {
+      document.querySelectorAll('.sub-tab')[0]?.click();
+      setTimeout(() => {
+        if (grade) { const s = document.getElementById('pr-grade'); if (s) { s.value = grade; filterProspects(); } }
+      }, 400);
+    }
+  }, 150);
+}
+
 // ═══════════════════════════════════════════════════════════════
 //  DASHBOARD
 // ═══════════════════════════════════════════════════════════════
@@ -679,12 +942,12 @@ async function loadDashboard(force = false) {
 
   statsEl.innerHTML = `<div class="loading" style="grid-column:1/-1"><div class="spinner"></div> Loading…</div>`;
   tableEl.innerHTML = `<div class="loading"><div class="spinner"></div></div>`;
+  document.getElementById('charts-row').style.display = 'none';
 
   try {
-    const rows = await fetchSheet('Numbers');
-    // row[0] = headers, rows 1-7 = grades 7-12 + total
-    const grades = rows.slice(1, 7);   // 7th-12th
-    const totRow  = rows[7];           // Total row
+    const rows  = await fetchSheet('Numbers');
+    const grades = rows.slice(1, 7);   // 7th–12th
+    const totRow  = rows[7];
 
     const n = v => { const x = parseFloat(String(v||'').replace(/,/g,'')); return isNaN(x) ? 0 : x; };
 
@@ -707,58 +970,61 @@ async function loadDashboard(force = false) {
       </div>
       <div class="stat-card">
         <div class="stat-label">Applications</div>
-        <div class="stat-value gold">${apps}</div>
+        <div class="stat-value gold clickable" onclick="navToSensitive('applications','')" title="View all applications">${apps}</div>
         <div class="stat-sub">of ${need} still needed</div>
       </div>
       <div class="stat-card">
         <div class="stat-label">Prospects</div>
-        <div class="stat-value">${prospects}</div>
+        <div class="stat-value clickable" onclick="navToSensitive('prospects','')" title="View all prospects">${prospects}</div>
         <div class="stat-sub">in pipeline</div>
       </div>
     `;
     statsEl.dataset.ok = '1';
 
-    // Grade table
+    // Grade table with clickable numbers
     tableEl.innerHTML = `
       <div class="numbers-wrap">
         <table class="numbers-table">
           <thead>
             <tr>
-              <th>Grade</th>
-              <th>Downtown Goal</th>
-              <th>Airline Goal</th>
-              <th>Total Goal</th>
-              <th>Returning</th>
-              <th>Need</th>
-              <th>Applications</th>
-              <th>Prospects</th>
-              <th>Progress</th>
+              <th>Grade</th><th>Downtown Goal</th><th>Airline Goal</th>
+              <th>Total Goal</th><th>Returning</th><th>Need</th>
+              <th>Applications</th><th>Prospects</th><th>Progress</th>
             </tr>
           </thead>
           <tbody>
             ${[...grades, totRow].map((r, idx) => {
               const isTotal = idx === grades.length;
-              const goal = n(r[5]);   // "Need" column
+              const goal = n(r[5]);
               const appCount = n(r[6]);
+              const proCount = n(r[7]);
               const pct = goal > 0 ? Math.min(100, Math.round((appCount / goal) * 100)) : 0;
               const fillClass = pct >= 100 ? 'done' : pct >= 50 ? '' : 'gold';
+              const gradeLabel = esc(r[0]);
               return `
                 <tr>
-                  <td><strong>${esc(r[0])}</strong></td>
+                  <td><strong>${gradeLabel}</strong></td>
                   <td>${n(r[1]) || '—'}</td>
                   <td>${n(r[2]) || '—'}</td>
                   <td><strong>${n(r[3]) || '—'}</strong></td>
                   <td>${n(r[4]) || '—'}</td>
                   <td>${n(r[5]) || '—'}</td>
-                  <td><strong style="color:var(--gold)">${n(r[6])}</strong></td>
-                  <td>${n(r[7])}</td>
+                  <td>
+                    ${!isTotal && appCount > 0
+                      ? `<span class="num-link" onclick="navToSensitive('applications','${gradeLabel}')" title="View ${gradeLabel} applications">${appCount}</span>`
+                      : `<strong style="color:var(--gold)">${appCount}</strong>`}
+                  </td>
+                  <td>
+                    ${!isTotal && proCount > 0
+                      ? `<span class="num-link" onclick="navToSensitive('prospects','${gradeLabel}')" title="View ${gradeLabel} prospects">${proCount}</span>`
+                      : proCount}
+                  </td>
                   <td>
                     ${!isTotal ? `
                       <div class="bar-cell">
                         <div class="bar-track"><div class="bar-fill ${fillClass}" style="width:${pct}%"></div></div>
                         <div class="bar-num">${pct}%</div>
-                      </div>
-                    ` : ''}
+                      </div>` : ''}
                   </td>
                 </tr>`;
             }).join('')}
@@ -767,14 +1033,125 @@ async function loadDashboard(force = false) {
       </div>
     `;
 
+    renderCharts(grades, n);
     setMeta('Updated just now · Live from Google Sheets');
   } catch (e) {
     statsEl.innerHTML = errMsg(e, 'dashboard data');
   }
 }
 
+// ─── Donut charts ───────────────────────────────────────────────
+function renderCharts(grades, n) {
+  document.getElementById('charts-row').style.display = '';
+
+  const labels        = grades.map(r => r[0]);
+  const appCounts     = grades.map(r => n(r[6]));
+  const needs         = grades.map(r => n(r[5]));
+  const prospectCounts = grades.map(r => n(r[7]));
+
+  const totalApps     = appCounts.reduce((a,b)=>a+b,0);
+  const totalNeed     = needs.reduce((a,b)=>a+b,0);
+  const totalProspects = prospectCounts.reduce((a,b)=>a+b,0);
+  const overallPct    = totalNeed > 0 ? Math.round((totalApps / totalNeed) * 100) : 0;
+  const expectedApps  = Math.floor(totalProspects / 3);
+
+  document.getElementById('apps-pct-lbl').textContent    = overallPct + '%';
+  document.getElementById('prospects-total-lbl').textContent = totalProspects;
+  document.getElementById('conversion-box').innerHTML =
+    `<strong>3:1 Conversion Estimate:</strong> ${totalProspects} prospects ÷ 3 = ` +
+    `~<strong>${expectedApps} expected applications</strong>. ` +
+    `Current ${totalApps} apps + ${expectedApps} projected = ` +
+    `<strong>${totalApps + expectedApps}</strong> of <strong>${totalNeed}</strong> needed.`;
+
+  const PALETTE = ['#1B4332','#2d6a4f','#40916c','#52b788','#74c69d','#95d5b2'];
+
+  // Apps donut — color-coded by completion
+  if (_appsChart) _appsChart.destroy();
+  _appsChart = new Chart(
+    document.getElementById('apps-chart').getContext('2d'), {
+    type: 'doughnut',
+    data: {
+      labels,
+      datasets: [{
+        data: appCounts,
+        backgroundColor: appCounts.map((a,i) => {
+          const pct = needs[i] > 0 ? a / needs[i] : 0;
+          return pct >= 1 ? '#16a34a' : pct >= 0.5 ? '#40916c' : '#B8860B';
+        }),
+        borderWidth: 2, borderColor: '#fff'
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '65%',
+      plugins: {
+        legend: {
+          position: 'right',
+          labels: {
+            font: { size: 11, weight: '600' }, boxWidth: 12,
+            generateLabels: chart => chart.data.labels.map((lbl, i) => ({
+              text: `${lbl}: ${appCounts[i]}/${needs[i]}`,
+              fillStyle: chart.data.datasets[0].backgroundColor[i],
+              strokeStyle: '#fff', lineWidth: 2, index: i
+            }))
+          }
+        },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const i = ctx.dataIndex;
+              const pct = needs[i] > 0 ? Math.round((appCounts[i]/needs[i])*100) : 0;
+              return ` ${ctx.label}: ${appCounts[i]} apps (${pct}% of ${needs[i]} needed)`;
+            }
+          }
+        }
+      },
+      onClick: (e, els) => { if (els.length) navToSensitive('applications', labels[els[0].index]); }
+    }
+  });
+
+  // Prospects donut
+  if (_prospectsChart) _prospectsChart.destroy();
+  _prospectsChart = new Chart(
+    document.getElementById('prospects-chart').getContext('2d'), {
+    type: 'doughnut',
+    data: {
+      labels,
+      datasets: [{
+        data: prospectCounts,
+        backgroundColor: PALETTE,
+        borderWidth: 2, borderColor: '#fff'
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '65%',
+      plugins: {
+        legend: {
+          position: 'right',
+          labels: {
+            font: { size: 11, weight: '600' }, boxWidth: 12,
+            generateLabels: chart => chart.data.labels.map((lbl, i) => ({
+              text: `${lbl}: ${prospectCounts[i]} (~${Math.floor(prospectCounts[i]/3)} exp.)`,
+              fillStyle: PALETTE[i],
+              strokeStyle: '#fff', lineWidth: 2, index: i
+            }))
+          }
+        },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const i = ctx.dataIndex;
+              return ` ${ctx.label}: ${prospectCounts[i]} prospects (~${Math.floor(prospectCounts[i]/3)} expected apps)`;
+            }
+          }
+        }
+      },
+      onClick: (e, els) => { if (els.length) navToSensitive('prospects', labels[els[0].index]); }
+    }
+  });
+}
+
 // ═══════════════════════════════════════════════════════════════
-//  WEEKLY NOTES
+//  WEEKLY NOTES  (fixed sheet name: was missing the slash)
 // ═══════════════════════════════════════════════════════════════
 async function loadNotes(force = false) {
   const el = document.getElementById('notes-wrap');
@@ -782,10 +1159,10 @@ async function loadNotes(force = false) {
   el.innerHTML = `<div class="loading"><div class="spinner"></div> Loading notes…</div>`;
 
   try {
-    const rows = await fetchSheet('Weekly RAMProgram Support Notes');
+    // Correct sheet name includes the forward slash
+    const rows = await fetchSheet('Weekly RAM/Program Support Notes');
     const data = rows.slice(1).filter(r => r.some(c => c));
 
-    // Group into weeks
     const weeks = [];
     let cur = null;
     for (const r of data) {
@@ -799,14 +1176,23 @@ async function loadNotes(force = false) {
       }
     }
 
-    if (!weeks.length) { el.innerHTML = `<div class="msg-warn">No weekly notes found yet.</div>`; return; }
+    if (!weeks.length) {
+      el.innerHTML = `<div class="msg-warn">
+        No weekly notes found. Make sure the sheet tab is named exactly
+        <strong>"Weekly RAM/Program Support Notes"</strong> and has dates (M/D/YYYY) in column A.
+      </div>`;
+      return;
+    }
 
     el.innerHTML = weeks.slice().reverse().map(w => {
-      const items = w.items.filter(i => i.topic !== 'Additional Notes' && (i.topic || i.forrest || i.keiron || i.marcus));
+      const items = w.items.filter(i => i.topic || i.forrest || i.keiron || i.marcus);
       if (!items.length) return '';
       return `
         <div class="week-block">
-          <div class="week-header">📅 Week of ${fmtDate(w.date)}</div>
+          <div class="week-header" onclick="this.closest('.week-block').classList.toggle('collapsed')">
+            <span>📅 Week of ${fmtDate(w.date)}</span>
+            <span class="week-caret">▾</span>
+          </div>
           <div class="week-body">
             ${items.map(item => {
               const hasPeople = item.forrest || item.keiron || item.marcus;
@@ -841,8 +1227,8 @@ async function loadSchools(force = false) {
   try {
     const rows = await fetchSheet('School Tracker');
     _schools = rows.slice(1).filter(r => r[0]);
+    _schoolEdits = {};
 
-    // Populate parish dropdown
     const parishes = [...new Set(_schools.map(r => r[5]).filter(Boolean))].sort();
     const sel = document.getElementById('school-parish');
     sel.innerHTML = '<option value="">All Parishes</option>' + parishes.map(p => `<option>${esc(p)}</option>`).join('');
@@ -872,33 +1258,166 @@ function filterSchools() {
   renderSchools(out);
 }
 
+function toggleSchoolEdit() {
+  _schoolEditMode = !_schoolEditMode;
+  document.getElementById('school-edit-btn').textContent = _schoolEditMode ? '✓ Done Editing' : '✏️ Edit Mode';
+  document.getElementById('school-edit-notice').style.display = _schoolEditMode ? 'block' : 'none';
+  if (_schoolEditMode) {
+    // Add export button if not there
+    if (!document.getElementById('school-export-btn')) {
+      const btn = document.createElement('button');
+      btn.id = 'school-export-btn';
+      btn.className = 'btn btn-outline';
+      btn.textContent = '⬇ Export CSV';
+      btn.onclick = exportSchools;
+      document.getElementById('school-edit-btn').after(btn);
+    }
+    document.getElementById('school-export-btn').style.display = '';
+  } else {
+    const eb = document.getElementById('school-export-btn');
+    if (eb) eb.style.display = 'none';
+  }
+  filterSchools();
+}
+
+function saveSchoolCell(origIdx, colIdx, value) {
+  if (!_schoolEdits[origIdx]) _schoolEdits[origIdx] = {};
+  _schoolEdits[origIdx][colIdx] = value;
+  _schools[origIdx][colIdx] = value;
+}
+
+function exportSchools() {
+  const hdr = ['School','Notes','Visited','Rep','Relationship','Parish','Type','Col7',
+                'TP1','TP2','TP3','TP4','TP5',
+                'Contact1 Name','Contact1 Title','Contact1 Email','Contact1 Phone',
+                'Contact2 Name','Contact2 Title','Contact2 Email','Contact2 Phone'];
+  const csv = [hdr, ..._schools.map(r => r.map(v => `"${String(v||'').replace(/"/g,'""')}"`))]
+    .map(row => row.join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'school_tracker_edits.csv';
+  a.click();
+}
+
 function renderSchools(data) {
-  document.getElementById('school-count').textContent = `${data.length} school${data.length !== 1 ? 's' : ''}`;
+  document.getElementById('school-count').textContent = `${data.length} school${data.length!==1?'s':''}`;
   const el = document.getElementById('schools-wrap');
-  if (!data.length) { el.innerHTML = `<div style="text-align:center;padding:24px;color:var(--muted)">No schools match your filters.</div>`; return; }
+  if (!data.length) {
+    el.innerHTML = `<div style="text-align:center;padding:24px;color:var(--muted)">No schools match your filters.</div>`;
+    return;
+  }
 
   el.innerHTML = `
     <div class="table-wrap">
       <table>
         <thead><tr>
-          <th>School</th><th>Rep</th><th>Parish</th><th>Type</th>
-          <th>Relationship</th><th>Visited?</th><th>Touchpoints</th><th>Notes</th>
+          <th style="width:32px"></th>
+          <th>School</th>
+          <th>Rep</th>
+          <th>Parish</th>
+          <th>Type</th>
+          <th>Relationship</th>
+          <th>Visited?</th>
+          <th>Contact Name</th>
+          <th>Title</th>
+          <th>Email</th>
+          <th>Phone</th>
+          <th>Notes</th>
         </tr></thead>
         <tbody>
-          ${data.map(r => `
-            <tr>
-              <td><strong>${esc(r[0])}</strong></td>
-              <td>${esc(r[3]||'')}</td>
-              <td>${esc(r[5]||'')}</td>
-              <td>${esc(r[6]||'')}</td>
-              <td>${tempBadge(r[4])}</td>
-              <td>${(r[2]||'').toUpperCase()==='TRUE' ? '<span class="badge b-yes">✓ Yes</span>' : '<span class="badge b-no">No</span>'}</td>
-              <td style="max-width:220px;font-size:12px">${[r[8],r[9],r[10],r[11],r[12]].filter(Boolean).map((t,i)=>`<div style="margin-bottom:3px"><strong style="color:var(--muted)">${i+1}.</strong> ${esc(t)}</div>`).join('')}</td>
-              <td style="max-width:180px;font-size:12px;color:var(--muted)">${esc(r[1]||'')}</td>
-            </tr>`).join('')}
+          ${data.map((r, idx) => {
+            const origIdx = _schools.indexOf(r);
+            const changed = Object.keys(_schoolEdits[origIdx]||{}).length > 0;
+            const visited = (r[2]||'').toUpperCase() === 'TRUE';
+
+            // contact columns — adjust indices if your sheet differs
+            const c1Name  = r[13] || '';
+            const c1Title = r[14] || '';
+            const c1Email = r[15] || '';
+            const c1Phone = r[16] || '';
+            const c2Name  = r[17] || '';
+            const c2Title = r[18] || '';
+            const c2Email = r[19] || '';
+            const c2Phone = r[20] || '';
+            const touchpoints = [r[8],r[9],r[10],r[11],r[12]].filter(Boolean);
+
+            const em = _schoolEditMode;
+            return `
+              <tr class="${changed ? 'row-changed' : ''}">
+                <td style="text-align:center">
+                  <button class="expand-btn" id="exp-${idx}" onclick="toggleDetail(${idx},this)">▶</button>
+                </td>
+                <td><strong>${em
+                  ? `<input class="inline-edit" value="${ea(r[0])}" onchange="saveSchoolCell(${origIdx},0,this.value)">`
+                  : esc(r[0])}</strong></td>
+                <td>${em
+                  ? `<select class="inline-edit" onchange="saveSchoolCell(${origIdx},3,this.value)">
+                      ${['','Forrest','Keiron','Marcus'].map(o=>`<option ${r[3]===o?'selected':''}>${esc(o)}</option>`).join('')}
+                     </select>`
+                  : esc(r[3]||'')}</td>
+                <td>${esc(r[5]||'')}</td>
+                <td>${esc(r[6]||'')}</td>
+                <td>${em
+                  ? `<select class="inline-edit" onchange="saveSchoolCell(${origIdx},4,this.value)">
+                      ${['','Hot','Warm','Cool','Cold'].map(o=>`<option ${r[4]===o?'selected':''}>${esc(o)}</option>`).join('')}
+                     </select>`
+                  : tempBadge(r[4])}</td>
+                <td>${em
+                  ? `<select class="inline-edit" onchange="saveSchoolCell(${origIdx},2,this.value)">
+                      <option value="FALSE" ${!visited?'selected':''}>No</option>
+                      <option value="TRUE"  ${visited?'selected':''}>Yes</option>
+                     </select>`
+                  : (visited ? '<span class="badge b-yes">✓ Yes</span>' : '<span class="badge b-no">No</span>')}</td>
+                <td style="font-size:12px">${em
+                  ? `<input class="inline-edit" value="${ea(c1Name)}" onchange="saveSchoolCell(${origIdx},13,this.value)">`
+                  : esc(c1Name)}</td>
+                <td style="font-size:12px">${em
+                  ? `<input class="inline-edit" value="${ea(c1Title)}" onchange="saveSchoolCell(${origIdx},14,this.value)">`
+                  : esc(c1Title)}</td>
+                <td style="font-size:12px">${em
+                  ? `<input class="inline-edit" value="${ea(c1Email)}" onchange="saveSchoolCell(${origIdx},15,this.value)">`
+                  : (c1Email ? `<a href="mailto:${ea(c1Email)}" style="color:var(--green)">${esc(c1Email)}</a>` : '')}</td>
+                <td style="font-size:12px">${em
+                  ? `<input class="inline-edit" value="${ea(c1Phone)}" onchange="saveSchoolCell(${origIdx},16,this.value)">`
+                  : (c1Phone ? `<a href="tel:${ea(c1Phone)}" style="color:var(--green)">${esc(c1Phone)}</a>` : '')}</td>
+                <td style="font-size:12px;color:var(--muted);max-width:180px">${em
+                  ? `<input class="inline-edit" value="${ea(r[1]||'')}" onchange="saveSchoolCell(${origIdx},1,this.value)">`
+                  : esc(r[1]||'')}</td>
+              </tr>
+              <tr class="detail-row" id="detail-${idx}">
+                <td colspan="12">
+                  <div class="detail-grid">
+                    <div class="detail-field">
+                      <div class="detail-label">Touchpoints</div>
+                      <div class="detail-value" style="font-size:12px">
+                        ${touchpoints.length
+                          ? touchpoints.map((t,i)=>`<div style="margin-bottom:4px"><strong style="color:var(--muted)">${i+1}.</strong> ${esc(t)}</div>`).join('')
+                          : '<span style="color:var(--muted)">None logged</span>'}
+                      </div>
+                    </div>
+                    ${c2Name||c2Email||c2Phone ? `
+                    <div class="detail-field">
+                      <div class="detail-label">Contact 2</div>
+                      <div class="detail-value" style="font-size:12px">
+                        ${c2Name ? `<div><strong>${esc(c2Name)}</strong></div>` : ''}
+                        ${c2Title ? `<div style="color:var(--muted)">${esc(c2Title)}</div>` : ''}
+                        ${c2Email ? `<div><a href="mailto:${ea(c2Email)}" style="color:var(--green)">${esc(c2Email)}</a></div>` : ''}
+                        ${c2Phone ? `<div><a href="tel:${ea(c2Phone)}" style="color:var(--green)">${esc(c2Phone)}</a></div>` : ''}
+                      </div>
+                    </div>` : ''}
+                  </div>
+                </td>
+              </tr>`;
+          }).join('')}
         </tbody>
       </table>
     </div>`;
+}
+
+function toggleDetail(idx, btn) {
+  btn.classList.toggle('open');
+  document.getElementById('detail-' + idx).classList.toggle('open');
 }
 
 function tempBadge(v) {
@@ -912,7 +1431,7 @@ function tempBadge(v) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  RESOURCES
+//  RESOURCES  (fixed link opening via data-href to avoid esc() breaking URLs)
 // ═══════════════════════════════════════════════════════════════
 const QUICKLINK_MAP = {
   'Weekly RAM/Program Support Notes': 'notes',
@@ -934,31 +1453,40 @@ async function loadResources(force = false) {
   try {
     const infraRows = await fetchSheet('RAM Infrastructure Links');
     const infraData = infraRows.slice(1).filter(r => r[0]);
+
     infraEl.innerHTML = infraData.length
-      ? `<div class="link-chips">${infraData.map(r => `
-          <span class="link-chip" ${r[1] ? `onclick="window.open('${esc(r[1])}','_blank')"` : ''}>
-            🔗 ${esc(r[0])} ${r[1] ? '↗' : ''}
-          </span>`).join('')}</div>`
-      : `<div style="color:var(--muted);font-size:13px">No links found — add them to the RAM Infrastructure Links tab.</div>`;
+      ? `<div class="link-chips">${infraData.map(r => {
+          const url = (r[1]||'').trim();
+          // Store URL in data attribute so esc() quotes don't break the click
+          return `<span class="link-chip"
+                    ${url ? `data-href="${ea(url)}" onclick="openLink(this)"` : ''}
+                    style="${url ? '' : 'opacity:.5;cursor:default'}">
+                    🔗 ${esc(r[0])} ${url ? '↗' : ''}
+                  </span>`;
+        }).join('')}</div>`
+      : `<div style="color:var(--muted);font-size:13px">No links found — add them to the <em>RAM Infrastructure Links</em> tab.</div>`;
     infraEl.dataset.ok = '1';
 
     const qlRows = await fetchSheet('Quicklinks');
     const qlData = qlRows.slice(1).filter(r => r[0]);
-    qlEl.innerHTML = `<div class="link-chips">${qlData.map(r => `
-      <span class="link-chip" onclick="navByName('${esc(r[0])}')">
-        📌 ${esc(r[0])}
-      </span>`).join('')}</div>`;
+    qlEl.innerHTML = `<div class="link-chips">${qlData.map(r =>
+      `<span class="link-chip" data-name="${ea(r[0])}" onclick="navByName(this.dataset.name)">📌 ${esc(r[0])}</span>`
+    ).join('')}</div>`;
   } catch (e) {
     infraEl.innerHTML = errMsg(e, 'resources');
   }
 }
 
+function openLink(el) {
+  const href = el.dataset.href;
+  if (href) window.open(href, '_blank');
+}
+
 function navByName(name) {
   const view = QUICKLINK_MAP[name];
   if (!view) return;
-  const el = document.querySelector(`.nav-item[data-view="${view}"]`);
-  if (el) { document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active')); el.classList.add('active'); }
-  showView(view);
+  const el = document.querySelector(`.dropdown-item[data-view="${view}"]`);
+  if (el) nav(el, view);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -971,23 +1499,83 @@ async function loadPromo(force = false) {
 
   try {
     const rows = await fetchSheet('Promo Items');
-    const data = rows.slice(1).filter(r => r[0]);
+    _promoData = rows.slice(1).filter(r => r[0]);
+    renderPromo();
+    el.dataset.ok = '1';
+  } catch (e) {
+    el.innerHTML = errMsg(e, 'promo items');
+  }
+}
 
-    el.innerHTML = `<div class="promo-grid">${data.map(r => {
+function togglePromoEdit() {
+  _promoEditMode = !_promoEditMode;
+  document.getElementById('promo-edit-btn').textContent   = _promoEditMode ? '✓ Done Editing' : '✏️ Edit Mode';
+  document.getElementById('promo-export-btn').style.display = _promoEditMode ? '' : 'none';
+  document.getElementById('promo-edit-label').style.display = _promoEditMode ? '' : 'none';
+  document.getElementById('promo-wrap').dataset.ok = ''; // force re-render
+  renderPromo();
+}
+
+function savePromoCell(idx, col, val) {
+  _promoData[idx][col] = val;
+}
+
+function exportPromo() {
+  const hdr = ['Item Name','Quantity','In Stock','Notes'];
+  const csv = [hdr, ..._promoData.map(r => r.slice(0,4).map(v => `"${String(v||'').replace(/"/g,'""')}"`))]
+    .map(row => row.join(',')).join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'promo_items_edits.csv';
+  a.click();
+}
+
+function renderPromo() {
+  const el = document.getElementById('promo-wrap');
+
+  if (_promoEditMode) {
+    el.innerHTML = `
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Item</th><th>Quantity</th><th>In Stock</th><th>Notes</th></tr></thead>
+          <tbody>
+            ${_promoData.map((r, idx) => {
+              const inStock = (r[2]||'').toUpperCase() === 'TRUE';
+              return `
+                <tr>
+                  <td><strong>${esc(r[0])}</strong></td>
+                  <td>
+                    <input class="inline-edit" type="number" style="width:80px"
+                      value="${ea(r[1]||'')}" onchange="savePromoCell(${idx},1,this.value)">
+                  </td>
+                  <td>
+                    <select class="inline-edit" onchange="savePromoCell(${idx},2,this.value)">
+                      <option value="TRUE"  ${inStock?'selected':''}>✅ In Stock</option>
+                      <option value="FALSE" ${!inStock?'selected':''}>❌ Out of Stock</option>
+                    </select>
+                  </td>
+                  <td>
+                    <input class="inline-edit" value="${ea(r[3]||'')}" onchange="savePromoCell(${idx},3,this.value)">
+                  </td>
+                </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  } else {
+    el.innerHTML = `<div class="promo-grid">${_promoData.map(r => {
       const inStock = (r[2]||'').toUpperCase() === 'TRUE';
       return `
         <div class="promo-item">
           <div class="promo-name">${esc(r[0])}</div>
-          <div class="promo-qty">${r[1] || '—'}</div>
-          <div class="promo-status ${inStock ? 'in-stock' : 'no-stock'}">
+          <div class="promo-qty">${r[1]||'—'}</div>
+          <div class="promo-status ${inStock?'in-stock':'no-stock'}">
             ${inStock ? '✅ In Stock' : '❌ Out of Stock'}
           </div>
           ${r[3] ? `<div class="promo-note">${esc(r[3])}</div>` : ''}
         </div>`;
     }).join('')}</div>`;
-    el.dataset.ok = '1';
-  } catch (e) {
-    el.innerHTML = errMsg(e, 'promo items');
   }
 }
 
@@ -1010,6 +1598,7 @@ function openSensitive(force = false) {
   document.getElementById('gate-wrap').style.display = 'none';
   document.getElementById('sensitive-body').style.display = 'block';
   loadProspects(force);
+  applyPendingNav();
 }
 
 // ── Prospects ──
@@ -1021,11 +1610,9 @@ async function loadProspects(force = false) {
   try {
     const rows = await fetchSheet('Prospects');
     _prospects = rows.slice(1).filter(r => r[1]||r[2]);
-
     const grades = [...new Set(_prospects.map(r => r[11]).filter(Boolean))].sort();
     document.getElementById('pr-grade').innerHTML =
       '<option value="">All Grades</option>' + grades.map(g => `<option>${esc(g)}</option>`).join('');
-
     renderProspects(_prospects);
   } catch (e) {
     el.innerHTML = errMsg(e, 'Prospects');
@@ -1043,7 +1630,7 @@ function filterProspects() {
 }
 
 function renderProspects(data) {
-  document.getElementById('pr-count').textContent = `${data.length} prospect${data.length !== 1 ? 's' : ''}`;
+  document.getElementById('pr-count').textContent = `${data.length} prospect${data.length!==1?'s':''}`;
   const el = document.getElementById('prospects-wrap');
   if (!data.length) { el.innerHTML = `<div style="text-align:center;padding:24px;color:var(--muted)">No prospects match.</div>`; return; }
   const show = data.slice(0, 250);
@@ -1057,7 +1644,7 @@ function renderProspects(data) {
               <td><strong>${esc(r[1])} ${esc(r[2])}</strong></td>
               <td>${esc(r[11]||'')}</td>
               <td>${esc(r[10]||'')}</td>
-              <td><a href="mailto:${esc(r[4]||'')}" style="color:var(--green);font-size:12px">${esc(r[4]||'')}</a></td>
+              <td><a href="mailto:${ea(r[4]||'')}" style="color:var(--green);font-size:12px">${esc(r[4]||'')}</a></td>
               <td style="font-size:12px">${esc(r[5]||'')}</td>
               <td style="font-size:12px">${esc(r[16]||'')} ${esc(r[17]||'')}</td>
               <td style="font-size:12px">${esc(r[13]||'')}</td>
@@ -1077,11 +1664,9 @@ async function loadApps(force = false) {
   try {
     const rows = await fetchSheet('Applications');
     _apps = rows.slice(1).filter(r => r[1]||r[2]);
-
     const grades = [...new Set(_apps.map(r => r[15]).filter(Boolean))].sort();
     document.getElementById('ap-grade').innerHTML =
       '<option value="">All Grades</option>' + grades.map(g => `<option>${esc(g)}</option>`).join('');
-
     renderApps(_apps);
   } catch (e) {
     el.innerHTML = errMsg(e, 'Applications');
@@ -1099,7 +1684,7 @@ function filterApps() {
 }
 
 function renderApps(data) {
-  document.getElementById('ap-count').textContent = `${data.length} application${data.length !== 1 ? 's' : ''}`;
+  document.getElementById('ap-count').textContent = `${data.length} application${data.length!==1?'s':''}`;
   const el = document.getElementById('apps-wrap');
   if (!data.length) { el.innerHTML = `<div style="text-align:center;padding:24px;color:var(--muted)">No applications match.</div>`; return; }
   el.innerHTML = `
@@ -1112,7 +1697,7 @@ function renderApps(data) {
               <td><strong>${esc(r[1])} ${esc(r[2])}</strong></td>
               <td>${esc(r[15]||'')}</td>
               <td>${esc(r[14]||'')}</td>
-              <td><a href="mailto:${esc(r[6]||'')}" style="color:var(--green);font-size:12px">${esc(r[6]||'')}</a></td>
+              <td><a href="mailto:${ea(r[6]||'')}" style="color:var(--green);font-size:12px">${esc(r[6]||'')}</a></td>
               <td style="font-size:12px">${esc(r[7]||'')}</td>
               <td style="font-size:12px">${esc(r[28]||'')} ${esc(r[29]||'')}</td>
               <td style="font-size:12px">${fmtDateShort(r[0])}</td>
@@ -1162,10 +1747,7 @@ async function loadISACT() {
   try {
     const rows = await fetchSheet('ISACT Junior Prospect Cards');
     const data = rows.slice(1).filter(r => r[0]);
-    if (!data.length) {
-      el.innerHTML = `<div style="text-align:center;padding:24px;color:var(--muted)">No ISACT records added yet.</div>`;
-      el.dataset.ok='1'; return;
-    }
+    if (!data.length) { el.innerHTML = `<div style="text-align:center;padding:24px;color:var(--muted)">No ISACT records added yet.</div>`; el.dataset.ok='1'; return; }
     el.innerHTML = `
       <div class="table-wrap">
         <table>
@@ -1204,6 +1786,10 @@ function subTab(el, name) {
 function esc(s) {
   return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+// ea = escape for HTML attribute values (data-* etc.)
+function ea(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
 
 function fmtDate(s) {
   if (!s) return '';
@@ -1232,20 +1818,15 @@ function errMsg(e, label) {
 //  INIT
 // ═══════════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', () => {
-  // Detect local file — live data requires an https:// host
   if (location.protocol === 'file:') {
-    const warn = document.getElementById('local-warning');
-    warn.style.display = 'block';
-    // Push content down so warning is visible
-    document.querySelector('.sidebar').style.top = '48px';
-    document.querySelector('.main').style.paddingTop = '48px';
+    document.getElementById('local-warning').style.display = 'block';
+    document.querySelector('.topnav').style.marginTop = '48px';
     setMeta('⚠️ Deploy to GitHub Pages to enable live data');
   } else {
     setMeta('Fetching live data from Google Sheets…');
     loadDashboard();
   }
 
-  // Auto-unlock if already authenticated this session
   if (sessionStorage.getItem(SESSION_KEY) === '1') {
     document.getElementById('gate-wrap').style.display = 'none';
     document.getElementById('sensitive-body').style.display = 'block';
