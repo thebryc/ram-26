@@ -228,15 +228,6 @@
       position: relative;
       height: 270px;
     }
-    .chart-center {
-      position: absolute;
-      top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-      text-align: center;
-      pointer-events: none;
-    }
-    .chart-center .big   { font-size: 26px; font-weight: 900; color: var(--green); line-height: 1; }
-    .chart-center .small { font-size: 10.5px; font-weight: 700; color: var(--muted); margin-top: 3px; }
     .conversion-box {
       background: #fffbeb;
       border: 1px solid #fde68a;
@@ -628,10 +619,6 @@
         <div class="card-sub">Apps submitted vs. recruiting need — click a segment or number to filter</div>
         <div class="chart-wrap">
           <canvas id="apps-chart"></canvas>
-          <div class="chart-center">
-            <div class="big" id="apps-pct-lbl">—</div>
-            <div class="small">overall</div>
-          </div>
         </div>
       </div>
       <div class="card">
@@ -639,10 +626,6 @@
         <div class="card-sub">Every 3 prospects → ~1 expected application — click to filter</div>
         <div class="chart-wrap">
           <canvas id="prospects-chart"></canvas>
-          <div class="chart-center">
-            <div class="big" id="prospects-total-lbl">—</div>
-            <div class="small">total prospects</div>
-          </div>
         </div>
         <div class="conversion-box" id="conversion-box"></div>
       </div>
@@ -1055,8 +1038,7 @@ function renderCharts(grades, n) {
   const overallPct    = totalNeed > 0 ? Math.round((totalApps / totalNeed) * 100) : 0;
   const expectedApps  = Math.floor(totalProspects / 3);
 
-  document.getElementById('apps-pct-lbl').textContent    = overallPct + '%';
-  document.getElementById('prospects-total-lbl').textContent = totalProspects;
+  // center labels are now drawn by the Chart.js plugin directly on the canvas
   document.getElementById('conversion-box').innerHTML =
     `<strong>3:1 Conversion Estimate:</strong> ${totalProspects} prospects ÷ 3 = ` +
     `~<strong>${expectedApps} expected applications</strong>. ` +
@@ -1065,7 +1047,31 @@ function renderCharts(grades, n) {
 
   const PALETTE = ['#1B4332','#2d6a4f','#40916c','#52b788','#74c69d','#95d5b2'];
 
-  // Apps donut — color-coded by completion
+  // Chart.js plugin: draws centered text inside the donut arc
+  function makeCenterPlugin(getLines) {
+    return {
+      id: 'centerText',
+      beforeDraw(chart) {
+        const { ctx, chartArea } = chart;
+        if (!chartArea) return;
+        const cx = (chartArea.left + chartArea.right) / 2;
+        const cy = (chartArea.top  + chartArea.bottom) / 2;
+        const lines = getLines();
+        ctx.save();
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.font = '900 26px Segoe UI, system-ui, sans-serif';
+        ctx.fillStyle = '#1B4332';
+        ctx.fillText(lines[0], cx, cy - 9);
+        ctx.font = '700 11px Segoe UI, system-ui, sans-serif';
+        ctx.fillStyle = '#6b7280';
+        ctx.fillText(lines[1], cx, cy + 13);
+        ctx.restore();
+      }
+    };
+  }
+
+  // Apps donut — per-grade colors (same palette as prospects)
   if (_appsChart) _appsChart.destroy();
   _appsChart = new Chart(
     document.getElementById('apps-chart').getContext('2d'), {
@@ -1074,10 +1080,7 @@ function renderCharts(grades, n) {
       labels,
       datasets: [{
         data: appCounts,
-        backgroundColor: appCounts.map((a,i) => {
-          const pct = needs[i] > 0 ? a / needs[i] : 0;
-          return pct >= 1 ? '#16a34a' : pct >= 0.5 ? '#40916c' : '#B8860B';
-        }),
+        backgroundColor: PALETTE,
         borderWidth: 2, borderColor: '#fff'
       }]
     },
@@ -1087,10 +1090,10 @@ function renderCharts(grades, n) {
         legend: {
           position: 'right',
           labels: {
-            font: { size: 11, weight: '600' }, boxWidth: 12,
+            font: { size: 13, weight: '600' }, boxWidth: 16, padding: 10,
             generateLabels: chart => chart.data.labels.map((lbl, i) => ({
               text: `${lbl}: ${appCounts[i]}/${needs[i]}`,
-              fillStyle: chart.data.datasets[0].backgroundColor[i],
+              fillStyle: PALETTE[i],
               strokeStyle: '#fff', lineWidth: 2, index: i
             }))
           }
@@ -1106,7 +1109,8 @@ function renderCharts(grades, n) {
         }
       },
       onClick: (e, els) => { if (els.length) navToSensitive('applications', labels[els[0].index]); }
-    }
+    },
+    plugins: [makeCenterPlugin(() => [overallPct + '%', 'overall'])]
   });
 
   // Prospects donut
@@ -1128,7 +1132,7 @@ function renderCharts(grades, n) {
         legend: {
           position: 'right',
           labels: {
-            font: { size: 11, weight: '600' }, boxWidth: 12,
+            font: { size: 13, weight: '600' }, boxWidth: 16, padding: 10,
             generateLabels: chart => chart.data.labels.map((lbl, i) => ({
               text: `${lbl}: ${prospectCounts[i]} (~${Math.floor(prospectCounts[i]/3)} exp.)`,
               fillStyle: PALETTE[i],
@@ -1146,7 +1150,8 @@ function renderCharts(grades, n) {
         }
       },
       onClick: (e, els) => { if (els.length) navToSensitive('prospects', labels[els[0].index]); }
-    }
+    },
+    plugins: [makeCenterPlugin(() => [String(totalProspects), 'total prospects'])]
   });
 }
 
