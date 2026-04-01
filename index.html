@@ -1046,7 +1046,7 @@ function renderCharts(grades, n) {
     `<strong>${totalApps + expectedApps}</strong> of <strong>${totalNeed}</strong> needed.`;
 
   const PALETTE = ['#1B4332','#2d6a4f','#40916c','#52b788','#74c69d','#95d5b2'];
-
+  const APP_PALETTE = ['#7f1d1d','#991b1b','#b91c1c','#dc2626','#ef4444','#f87171'];
   // Chart.js plugin: draws centered text inside the donut arc
   function makeCenterPlugin(getLines) {
     return {
@@ -1080,7 +1080,7 @@ function renderCharts(grades, n) {
       labels,
       datasets: [{
         data: appCounts,
-        backgroundColor: PALETTE,
+        backgroundColor: APP_PALETTE,
         borderWidth: 2, borderColor: '#fff'
       }]
     },
@@ -1093,7 +1093,7 @@ function renderCharts(grades, n) {
             font: { size: 13, weight: '600' }, boxWidth: 16, padding: 10,
             generateLabels: chart => chart.data.labels.map((lbl, i) => ({
               text: `${lbl}: ${appCounts[i]}/${needs[i]}`,
-              fillStyle: PALETTE[i],
+              fillStyle: APP_PALETTE[i],
               strokeStyle: '#fff', lineWidth: 2, index: i
             }))
           }
